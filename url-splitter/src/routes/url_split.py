@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, redirect
 from src.models.user import db
-from src.models.url_split import URLSplit as UrlSplit  # CORREÇÃO: Import correto
+from src.models.url_split import URLSplit as UrlSplit
 import random
 import json
 from datetime import datetime
@@ -25,7 +25,6 @@ def get_splits():
                 'name': split.name,
                 'destinations': destinations,
                 'weights': weights,
-                'total_clicks': split.total_clicks,
                 'created_at': split.created_at.isoformat() if split.created_at else None
             })
         
@@ -55,13 +54,12 @@ def create_split():
         if existing:
             return jsonify({'error': 'Slug já existe'}), 400
         
-        # Criar novo split
+        # Criar novo split (SEM total_clicks)
         new_split = UrlSplit(
             slug=data['slug'],
             name=data['name'],
             destinations=json.dumps(data['destinations']),
             weights=json.dumps(data.get('weights', [25] * len(data['destinations']))),
-            total_clicks=0,
             created_at=datetime.utcnow()
         )
         
@@ -182,10 +180,6 @@ def redirect_split(slug):
         else:
             chosen_url = random.choice(destinations)
         
-        # Incrementar contador
-        split.total_clicks += 1
-        db.session.commit()
-        
         print(f"🔗 Redirecionamento: {slug} -> {chosen_url}")
         
         return redirect(chosen_url)
@@ -209,7 +203,6 @@ def get_split_stats(split_id):
             'id': split.id,
             'slug': split.slug,
             'name': split.name,
-            'total_clicks': split.total_clicks,
             'destinations': destinations,
             'weights': weights,
             'created_at': split.created_at.isoformat() if split.created_at else None
