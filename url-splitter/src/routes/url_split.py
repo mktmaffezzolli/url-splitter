@@ -13,6 +13,8 @@ def get_splits():
         splits = UrlSplit.query.all()
         splits_data = []
         
+        print(f"🔍 Encontrados {len(splits)} splits no banco")
+        
         for split in splits:
             # Converter JSON strings para objetos Python
             destinations = json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations
@@ -28,7 +30,7 @@ def get_splits():
         
         return jsonify(splits_data)
     except Exception as e:
-        print(f"Erro ao buscar splits: {e}")
+        print(f"❌ Erro ao buscar splits: {e}")
         return jsonify({'error': str(e)}), 500
 
 @url_split_bp.route('/splits', methods=['POST'])
@@ -63,7 +65,7 @@ def create_split():
         db.session.add(new_split)
         db.session.commit()
         
-        print(f"✅ Split criado: {data['slug']}")
+        print(f"✅ Split criado: {data['slug']} (ID: {new_split.id})")
         
         return jsonify({
             'id': new_split.id,
@@ -158,32 +160,60 @@ def delete_split(split_id):
 
 @url_split_bp.route('/r/<slug>')
 def redirect_split(slug):
-    """Redirecionamento do split"""
+    """Redirecionamento do split - VERSÃO CORRIGIDA"""
     try:
+        print(f"🔍 Buscando split com slug: '{slug}'")
+        
+        # Buscar split no banco de dados
         split = UrlSplit.query.filter_by(slug=slug).first()
+        
         if not split:
-            return "Split não encontrado", 404
+            print(f"❌ Split '{slug}' não encontrado no banco")
+            # Listar todos os splits para debug
+            all_splits = UrlSplit.query.all()
+            print(f"📋 Splits disponíveis: {[s.slug for s in all_splits]}")
+            return jsonify({'error': 'Split not found'}), 404
+        
+        print(f"✅ Split encontrado: {split.slug} (ID: {split.id})")
         
         # Converter JSON para objetos Python
-        destinations = json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations
-        weights = json.loads(split.weights) if isinstance(split.weights, str) else split.weights
+        try:
+            destinations = json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations
+            weights = json.loads(split.weights) if isinstance(split.weights, str) else split.weights
+        except json.JSONDecodeError as e:
+            print(f"❌ Erro ao decodificar JSON: {e}")
+            return jsonify({'error': 'Dados corrompidos'}), 500
         
-        if not destinations:
-            return "Nenhum destino configurado", 404
+        print(f"📍 Destinos: {destinations}")
+        print(f"⚖️ Pesos: {weights}")
+        
+        if not destinations or len(destinations) == 0:
+            print("❌ Nenhum destino configurado")
+            return jsonify({'error': 'Nenhum destino configurado'}), 404
         
         # Escolher destino baseado nos pesos
-        if len(weights) == len(destinations):
-            chosen_url = random.choices(destinations, weights=weights)[0]
-        else:
-            chosen_url = random.choice(destinations)
+        try:
+            if len(weights) == len(destinations) and all(w > 0 for w in weights):
+                chosen_url = random.choices(destinations, weights=weights)[0]
+                print(f"🎯 URL escolhida com peso: {chosen_url}")
+            else:
+                chosen_url = random.choice(destinations)
+                print(f"🎯 URL escolhida aleatoriamente: {chosen_url}")
+        except Exception as e:
+            print(f"❌ Erro ao escolher URL: {e}")
+            chosen_url = destinations[0]  # Fallback para primeira URL
+            print(f"🔄 Fallback para primeira URL: {chosen_url}")
         
-        print(f"🔗 Redirecionamento: {slug} -> {chosen_url}")
+        print(f"🔗 Redirecionando {slug} -> {chosen_url}")
         
-        return redirect(chosen_url)
+        # Fazer redirecionamento
+        return redirect(chosen_url, code=302)
         
     except Exception as e:
-        print(f"❌ Erro no redirecionamento: {e}")
-        return "Erro interno", 500
+        print(f"❌ Erro crítico no redirecionamento: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @url_split_bp.route('/splits/<int:split_id>/stats', methods=['GET'])
 def get_split_stats(split_id):
@@ -206,4 +236,31 @@ def get_split_stats(split_id):
         
     except Exception as e:
         print(f"❌ Erro ao buscar estatísticas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Endpoint de debug para verificar splits
+@url_split_bp.route('/debug/splits', methods=['GET'])
+def debug_splits():
+    """Endpoint de debug para verificar splits no banco"""
+    try:
+        splits = UrlSplit.query.all()
+        debug_data = []
+        
+        for split in splits:
+            debug_data.append({
+                'id': split.id,
+                'slug': split.slug,
+                'name': split.name,
+                'destinations_raw': split.destinations,
+                'weights_raw': split.weights,
+                'destinations_parsed': json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations,
+                'weights_parsed': json.loads(split.weights) if isinstance(split.weights, str) else split.weights
+            })
+        
+        return jsonify({
+            'total_splits': len(splits),
+            'splits': debug_data
+        })
+        
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
