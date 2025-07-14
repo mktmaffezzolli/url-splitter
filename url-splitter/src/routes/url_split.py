@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, redirect
 from src.models.user import db
-from src.models.url_split import UrlSplit
+from src.models.url_split import URLSplit as UrlSplit  # CORREÇÃO: Import correto
 import random
 import json
 from datetime import datetime
@@ -218,4 +218,3 @@ def get_split_stats(split_id):
     except Exception as e:
         print(f"❌ Erro ao buscar estatísticas: {e}")
         return jsonify({'error': str(e)}), 500
-
