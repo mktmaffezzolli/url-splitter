@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class UrlSplit(db.Model):
+class URLSplit(db.Model):
     __tablename__ = 'url_splits'
     
     id = db.Column(db.Integer, primary_key=True)
