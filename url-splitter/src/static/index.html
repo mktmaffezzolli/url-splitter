@@ -339,6 +339,19 @@
         // Variáveis globais
         let splits = [];
 
+        // Função para fazer parse seguro de JSON
+        function safeJsonParse(str, fallback = []) {
+            try {
+                if (typeof str === 'string') {
+                    return JSON.parse(str);
+                }
+                return Array.isArray(str) ? str : fallback;
+            } catch (error) {
+                console.error('Erro ao fazer parse do JSON:', error, str);
+                return fallback;
+            }
+        }
+
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             loadSplits();
@@ -374,9 +387,20 @@
                 }
                 
                 const data = await response.json();
-                console.log('Splits carregados:', data);
+                console.log('Dados recebidos:', data);
                 
-                splits = Array.isArray(data) ? data : [];
+                // Processar dados e fazer parse dos JSONs
+                splits = Array.isArray(data) ? data.map(split => {
+                    console.log('Processando split:', split);
+                    
+                    return {
+                        ...split,
+                        destinations: safeJsonParse(split.destinations, []),
+                        weights: safeJsonParse(split.weights, [])
+                    };
+                }) : [];
+                
+                console.log('Splits processados:', splits);
                 renderSplits();
                 
             } catch (error) {
@@ -399,10 +423,12 @@
             html += '<thead><tr><th>Nome</th><th>URL</th><th>Destinos</th><th>Ações</th></tr></thead><tbody>';
             
             splits.forEach(split => {
+                console.log('Renderizando split:', split);
+                
                 const splitUrl = `${window.location.origin}/api/r/${split.slug}`;
                 
                 html += '<tr>';
-                html += `<td><strong>${split.name}</strong></td>`;
+                html += `<td><strong>${split.name || 'Sem nome'}</strong></td>`;
                 html += `<td>
                     <div class="split-url">${splitUrl}</div>
                     <button class="btn btn-secondary btn-small copy-btn" onclick="copyToClipboard('${splitUrl}')">📋 Copiar</button>
@@ -410,9 +436,13 @@
                 
                 // Destinos
                 html += '<td><div class="destinations-list">';
-                if (split.destinations && split.destinations.length > 0) {
-                    split.destinations.forEach((dest, index) => {
-                        const weight = split.weights && split.weights[index] ? split.weights[index] : 0;
+                
+                const destinations = Array.isArray(split.destinations) ? split.destinations : [];
+                const weights = Array.isArray(split.weights) ? split.weights : [];
+                
+                if (destinations.length > 0) {
+                    destinations.forEach((dest, index) => {
+                        const weight = weights[index] || 0;
                         html += `<span class="destination-url">${dest} (${weight}%)</span>`;
                     });
                 } else {
@@ -423,7 +453,7 @@
                 // Ações
                 html += `<td>
                     <button class="btn btn-primary btn-small" onclick="editSplit(${split.id})">✏️ Editar</button>
-                    <button class="btn btn-danger btn-small" onclick="deleteSplit(${split.id}, '${split.name}')">🗑️ Excluir</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteSplit(${split.id}, '${split.name || 'Split'}')">🗑️ Excluir</button>
                 </td>`;
                 html += '</tr>';
             });
@@ -496,17 +526,22 @@
             const split = splits.find(s => s.id === splitId);
             if (!split) return;
             
+            console.log('Editando split:', split);
+            
             document.getElementById('editSplitId').value = split.id;
-            document.getElementById('editSplitName').value = split.name;
+            document.getElementById('editSplitName').value = split.name || '';
             
             // Limpar destinos existentes
             const container = document.getElementById('editDestinations');
             container.innerHTML = '';
             
             // Adicionar destinos atuais
-            if (split.destinations && split.destinations.length > 0) {
-                split.destinations.forEach((dest, index) => {
-                    const weight = split.weights && split.weights[index] ? split.weights[index] : 25;
+            const destinations = Array.isArray(split.destinations) ? split.destinations : [];
+            const weights = Array.isArray(split.weights) ? split.weights : [];
+            
+            if (destinations.length > 0) {
+                destinations.forEach((dest, index) => {
+                    const weight = weights[index] || 25;
                     addEditDestination(dest, weight);
                 });
             } else {
