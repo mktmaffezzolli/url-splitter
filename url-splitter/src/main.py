@@ -25,10 +25,8 @@ if DATABASE_URL:
     # Heroku PostgreSQL
     print("🐘 Usando PostgreSQL do Heroku")
     
-    # Corrigir URL se necessário
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    
+    # CORREÇÃO: Heroku agora já fornece postgresql:// por padrão
+    # Não precisa mais fazer replace
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
