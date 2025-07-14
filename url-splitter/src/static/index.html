@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL Splitter Pro</title>
+    <title>URL Splitter - Divisor de Tráfego</title>
     <style>
         * {
             margin: 0;
@@ -23,22 +23,6 @@
             margin: 0 auto;
         }
 
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
         .card {
             background: white;
             border-radius: 15px;
@@ -47,18 +31,32 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
+        label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #333;
         }
 
-        .form-group input {
+        input[type="text"], input[type="number"] {
             width: 100%;
             padding: 12px;
             border: 2px solid #e1e5e9;
@@ -67,7 +65,7 @@
             transition: border-color 0.3s;
         }
 
-        .form-group input:focus {
+        input[type="text"]:focus, input[type="number"]:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -79,18 +77,18 @@
             margin-bottom: 20px;
         }
 
-        .destination-row {
+        .destination-item {
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
             align-items: center;
         }
 
-        .destination-row input[type="url"] {
+        .destination-item input[type="text"] {
             flex: 1;
         }
 
-        .destination-row input[type="number"] {
+        .destination-item input[type="number"] {
             width: 80px;
         }
 
@@ -102,6 +100,9 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
 
         .btn-primary {
@@ -119,15 +120,63 @@
             color: white;
         }
 
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
         .btn-danger {
             background: #dc3545;
             color: white;
-            padding: 8px 12px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
             font-size: 14px;
         }
 
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         .splits-list {
-            margin-top: 20px;
+            margin-top: 30px;
         }
 
         .split-item {
@@ -145,175 +194,229 @@
             margin-bottom: 15px;
         }
 
-        .split-name {
-            font-size: 1.2rem;
-            font-weight: 600;
+        .split-info h3 {
             color: #333;
+            margin-bottom: 5px;
+        }
+
+        .split-info p {
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .split-actions {
+            display: flex;
+            gap: 10px;
         }
 
         .split-url {
             background: #e9ecef;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 10px;
+            border-radius: 5px;
             font-family: monospace;
-            margin: 10px 0;
             word-break: break-all;
+            margin: 10px 0;
         }
 
-        .analytics {
-            margin-top: 15px;
+        .destinations-list {
+            margin-top: 10px;
         }
 
-        .analytics-item {
+        .destination-display {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #e9ecef;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            border-left: 4px solid #667eea;
         }
 
-        .error {
-            color: #dc3545;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
         }
 
-        .success {
-            color: #155724;
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #6c757d;
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .destination-item {
+                flex-direction: column;
+            }
+            
+            .destination-item input[type="number"] {
+                width: 100%;
+            }
+            
+            .split-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .split-actions {
+                margin-top: 10px;
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚀 URL Splitter Pro</h1>
-            <p>Distribua seu tráfego inteligentemente com PostgreSQL persistente</p>
-        </div>
-
         <div class="card">
-            <h2>📊 Criar Novo Split</h2>
+            <h1>🔗 URL Splitter</h1>
+            <p class="subtitle">Divida o tráfego das suas campanhas entre múltiplos destinos</p>
+            
+            <div id="alertContainer"></div>
+            
             <form id="splitForm">
                 <div class="form-group">
                     <label for="splitName">Nome do Split:</label>
-                    <input type="text" id="splitName" placeholder="Ex: Atendentes Janeiro" required>
+                    <input type="text" id="splitName" placeholder="Ex: Atendentes WhatsApp" required>
                 </div>
-
+                
                 <div class="form-group">
                     <label for="splitSlug">Slug (URL):</label>
-                    <input type="text" id="splitSlug" placeholder="Ex: atendentes-janeiro">
+                    <input type="text" id="splitSlug" placeholder="Ex: atendentes" required>
+                    <small style="color: #666;">Apenas letras, números e hífens. Será usado na URL final.</small>
                 </div>
-
+                
                 <div class="form-group">
-                    <label>Destinos:</label>
-                    <div class="destinations-container" id="destinationsContainer">
-                        <div class="destination-row">
-                            <input type="url" placeholder="https://exemplo.com/destino1" required>
-                            <input type="number" value="50" min="0" max="100" placeholder="Peso">
-                            <span>%</span>
+                    <label>Destinos e Pesos:</label>
+                    <div class="destinations-container">
+                        <div id="destinationsContainer">
+                            <div class="destination-item">
+                                <input type="text" placeholder="https://wa.me/5511999999001" required>
+                                <input type="number" placeholder="25" min="0" max="100" value="25">
+                                <span>%</span>
+                                <button type="button" class="btn btn-danger btn-small" onclick="removeDestination(this)">×</button>
+                            </div>
                         </div>
-                        <div class="destination-row">
-                            <input type="url" placeholder="https://exemplo.com/destino2" required>
-                            <input type="number" value="50" min="0" max="100" placeholder="Peso">
-                            <span>%</span>
-                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="addDestination()">+ Adicionar Destino</button>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="addDestination()">+ Adicionar Destino</button>
                 </div>
-
-                <button type="submit" class="btn btn-primary">🎯 Criar Split</button>
+                
+                <button type="submit" class="btn btn-primary">🚀 Criar Split</button>
             </form>
-
-            <div id="message"></div>
         </div>
 
-        <div class="card">
-            <h2>📈 Splits Existentes</h2>
-            <div id="splitsList" class="loading">Carregando splits...</div>
+        <div class="card splits-list">
+            <h2>📊 Splits Existentes</h2>
+            <div id="splitsContainer">
+                <p style="text-align: center; color: #666;">Carregando splits...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Editar Split</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editSplitId">
+                
+                <div class="form-group">
+                    <label for="editSplitName">Nome do Split:</label>
+                    <input type="text" id="editSplitName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Destinos e Pesos:</label>
+                    <div class="destinations-container">
+                        <div id="editDestinationsContainer">
+                            <!-- Destinos serão carregados aqui -->
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="addEditDestination()">+ Adicionar Destino</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success">💾 Salvar Alterações</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        let splits = [];
+        let currentEditId = null;
 
         // Carregar splits ao inicializar
         document.addEventListener('DOMContentLoaded', function() {
             loadSplits();
-            
-            // Auto-gerar slug baseado no nome
-            document.getElementById('splitName').addEventListener('input', function() {
-                const name = this.value;
-                const slug = name.toLowerCase()
-                    .replace(/[^a-z0-9\s]/g, '')
-                    .replace(/\s+/g, '-')
-                    .substring(0, 50);
-                document.getElementById('splitSlug').value = slug;
-            });
-
-            // Submit do formulário
-            document.getElementById('splitForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                createSplit();
-            });
         });
 
-        function addDestination() {
-            const container = document.getElementById('destinationsContainer');
-            const newRow = document.createElement('div');
-            newRow.className = 'destination-row';
-            newRow.innerHTML = `
-                <input type="url" placeholder="https://exemplo.com/destino" required>
-                <input type="number" value="25" min="0" max="100" placeholder="Peso">
-                <span>%</span>
-                <button type="button" class="btn btn-danger" onclick="removeDestination(this)">×</button>
-            `;
-            container.appendChild(newRow);
-        }
-
-        function removeDestination(button) {
-            button.parentElement.remove();
-        }
-
-        async function createSplit() {
-            try {
-                const name = document.getElementById('splitName').value;
-                const slug = document.getElementById('splitSlug').value;
+        // Criar split
+        document.getElementById('splitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('splitName').value;
+            const slug = document.getElementById('splitSlug').value;
+            const destinations = [];
+            const weights = [];
+            
+            const destinationItems = document.querySelectorAll('#destinationsContainer .destination-item');
+            
+            for (let item of destinationItems) {
+                const url = item.querySelector('input[type="text"]').value;
+                const weight = parseFloat(item.querySelector('input[type="number"]').value) || 0;
                 
-                const destinationRows = document.querySelectorAll('.destination-row');
-                const destinations = [];
-                const weights = [];
-                
-                destinationRows.forEach(row => {
-                    const urlInput = row.querySelector('input[type="url"]');
-                    const weightInput = row.querySelector('input[type="number"]');
-                    
-                    if (urlInput.value.trim()) {
-                        destinations.push(urlInput.value.trim());
-                        weights.push(parseInt(weightInput.value) || 0);
-                    }
-                });
-
-                if (destinations.length < 2) {
-                    showMessage('Pelo menos 2 destinos são necessários', 'error');
-                    return;
+                if (url) {
+                    destinations.push(url);
+                    weights.push(weight);
                 }
-
+            }
+            
+            if (destinations.length === 0) {
+                showAlert('Adicione pelo menos um destino', 'error');
+                return;
+            }
+            
+            try {
                 const response = await fetch('/api/splits', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         name: name,
@@ -322,100 +425,266 @@
                         weights: weights
                     })
                 });
-
-                const data = await response.json();
-
+                
+                const result = await response.json();
+                
                 if (response.ok) {
-                    showMessage('Split criado com sucesso!', 'success');
+                    showAlert('Split criado com sucesso!', 'success');
                     document.getElementById('splitForm').reset();
+                    resetDestinations();
                     loadSplits();
                 } else {
-                    showMessage(data.error || 'Erro ao criar split', 'error');
+                    showAlert(result.error || 'Erro ao criar split', 'error');
                 }
             } catch (error) {
-                showMessage('Erro de conexão: ' + error.message, 'error');
+                showAlert('Erro de conexão', 'error');
             }
-        }
+        });
 
+        // Editar split
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const splitId = document.getElementById('editSplitId').value;
+            const name = document.getElementById('editSplitName').value;
+            const destinations = [];
+            const weights = [];
+            
+            const destinationItems = document.querySelectorAll('#editDestinationsContainer .destination-item');
+            
+            for (let item of destinationItems) {
+                const url = item.querySelector('input[type="text"]').value;
+                const weight = parseFloat(item.querySelector('input[type="number"]').value) || 0;
+                
+                if (url) {
+                    destinations.push(url);
+                    weights.push(weight);
+                }
+            }
+            
+            if (destinations.length === 0) {
+                showAlert('Adicione pelo menos um destino', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/splits/${splitId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        destinations: destinations,
+                        weights: weights
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Split atualizado com sucesso!', 'success');
+                    closeEditModal();
+                    loadSplits();
+                } else {
+                    showAlert(result.error || 'Erro ao atualizar split', 'error');
+                }
+            } catch (error) {
+                showAlert('Erro de conexão', 'error');
+            }
+        });
+
+        // Carregar splits
         async function loadSplits() {
             try {
                 const response = await fetch('/api/splits');
-                const data = await response.json();
+                const splits = await response.json();
+                
+                const container = document.getElementById('splitsContainer');
+                
+                if (splits.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #666;">Nenhum split criado ainda.</p>';
+                    return;
+                }
+                
+                container.innerHTML = splits.map(split => `
+                    <div class="split-item">
+                        <div class="split-header">
+                            <div class="split-info">
+                                <h3>${split.name}</h3>
+                                <p><strong>Slug:</strong> ${split.slug}</p>
+                                <p><strong>Cliques:</strong> ${split.total_clicks}</p>
+                                <p><strong>Criado:</strong> ${new Date(split.created_at).toLocaleDateString('pt-BR')}</p>
+                            </div>
+                            <div class="split-actions">
+                                <button class="btn btn-warning btn-small" onclick="editSplit(${split.id})">✏️ Editar</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteSplit(${split.id}, '${split.slug}')">🗑️ Excluir</button>
+                            </div>
+                        </div>
+                        
+                        <div class="split-url">
+                            <strong>URL do Split:</strong> 
+                            <span onclick="copyToClipboard('${window.location.origin}/api/r/${split.slug}')" style="cursor: pointer; color: #667eea;">
+                                ${window.location.origin}/api/r/${split.slug} 📋
+                            </span>
+                        </div>
+                        
+                        <div class="destinations-list">
+                            <strong>Destinos:</strong>
+                            ${split.destinations.map((dest, index) => `
+                                <div class="destination-display">
+                                    <span>${dest}</span>
+                                    <span><strong>${split.weights[index]}%</strong></span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                document.getElementById('splitsContainer').innerHTML = '<p style="color: red;">Erro ao carregar splits</p>';
+            }
+        }
+
+        // Abrir modal de edição
+        async function editSplit(splitId) {
+            try {
+                const response = await fetch(`/api/splits/${splitId}/stats`);
+                const split = await response.json();
                 
                 if (response.ok) {
-                    splits = data;
-                    renderSplits();
+                    currentEditId = splitId;
+                    document.getElementById('editSplitId').value = splitId;
+                    document.getElementById('editSplitName').value = split.name;
+                    
+                    // Carregar destinos
+                    const container = document.getElementById('editDestinationsContainer');
+                    container.innerHTML = '';
+                    
+                    split.destinations.forEach((dest, index) => {
+                        const weight = split.weights[index] || 0;
+                        addEditDestination(dest, weight);
+                    });
+                    
+                    document.getElementById('editModal').style.display = 'block';
                 } else {
-                    document.getElementById('splitsList').innerHTML = '<div class="error">Erro ao carregar splits</div>';
+                    showAlert('Erro ao carregar dados do split', 'error');
                 }
             } catch (error) {
-                document.getElementById('splitsList').innerHTML = '<div class="error">Erro de conexão</div>';
+                showAlert('Erro de conexão', 'error');
             }
         }
 
-        function renderSplits() {
-            const container = document.getElementById('splitsList');
-            
-            if (splits.length === 0) {
-                container.innerHTML = '<p>Nenhum split criado ainda.</p>';
+        // Fechar modal de edição
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditId = null;
+        }
+
+        // Deletar split
+        async function deleteSplit(splitId, slug) {
+            if (!confirm(`Tem certeza que deseja excluir o split "${slug}"?`)) {
                 return;
             }
-
-            container.innerHTML = splits.map(split => `
-                <div class="split-item">
-                    <div class="split-header">
-                        <div class="split-name">${split.name}</div>
-                        <button class="btn btn-danger" onclick="deleteSplit(${split.id})">Excluir</button>
-                    </div>
-                    <div class="split-url">
-                        <strong>URL:</strong> ${window.location.origin}/api/r/${split.slug}
-                        <button onclick="copyToClipboard('${window.location.origin}/api/r/${split.slug}')" style="margin-left: 10px;">📋 Copiar</button>
-                    </div>
-                    <div><strong>Total de cliques:</strong> ${split.total_clicks}</div>
-                    <div class="analytics">
-                        <strong>Destinos:</strong>
-                        ${split.destinations.map((dest, index) => `
-                            <div class="analytics-item">
-                                <span>${dest}</span>
-                                <span>${split.weights[index]}%</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function deleteSplit(id) {
-            if (!confirm('Tem certeza que deseja excluir este split?')) return;
             
             try {
-                const response = await fetch(`/api/splits/${id}`, {
+                const response = await fetch(`/api/splits/${splitId}`, {
                     method: 'DELETE'
                 });
-
+                
+                const result = await response.json();
+                
                 if (response.ok) {
-                    showMessage('Split excluído com sucesso!', 'success');
+                    showAlert('Split excluído com sucesso!', 'success');
                     loadSplits();
                 } else {
-                    showMessage('Erro ao excluir split', 'error');
+                    showAlert(result.error || 'Erro ao excluir split', 'error');
                 }
             } catch (error) {
-                showMessage('Erro de conexão', 'error');
+                showAlert('Erro de conexão', 'error');
             }
         }
 
+        // Adicionar destino
+        function addDestination() {
+            const container = document.getElementById('destinationsContainer');
+            const div = document.createElement('div');
+            div.className = 'destination-item';
+            div.innerHTML = `
+                <input type="text" placeholder="https://wa.me/5511999999001" required>
+                <input type="number" placeholder="25" min="0" max="100" value="25">
+                <span>%</span>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeDestination(this)">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // Adicionar destino na edição
+        function addEditDestination(url = '', weight = 25) {
+            const container = document.getElementById('editDestinationsContainer');
+            const div = document.createElement('div');
+            div.className = 'destination-item';
+            div.innerHTML = `
+                <input type="text" placeholder="https://wa.me/5511999999001" value="${url}" required>
+                <input type="number" placeholder="25" min="0" max="100" value="${weight}">
+                <span>%</span>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeDestination(this)">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // Remover destino
+        function removeDestination(button) {
+            const container = button.closest('.destinations-container').querySelector('div');
+            if (container.children.length > 1) {
+                button.closest('.destination-item').remove();
+            } else {
+                showAlert('Deve haver pelo menos um destino', 'error');
+            }
+        }
+
+        // Reset destinos
+        function resetDestinations() {
+            const container = document.getElementById('destinationsContainer');
+            container.innerHTML = `
+                <div class="destination-item">
+                    <input type="text" placeholder="https://wa.me/5511999999001" required>
+                    <input type="number" placeholder="25" min="0" max="100" value="25">
+                    <span>%</span>
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeDestination(this)">×</button>
+                </div>
+            `;
+        }
+
+        // Copiar para clipboard
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
-                showMessage('URL copiada para a área de transferência!', 'success');
+                showAlert('URL copiada para a área de transferência!', 'success');
             });
         }
 
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        // Mostrar alerta
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            
+            container.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${message}
+                </div>
+            `;
+            
             setTimeout(() => {
-                messageDiv.innerHTML = '';
+                container.innerHTML = '';
             }, 5000);
+        }
+
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
         }
     </script>
 </body>
