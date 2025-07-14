@@ -18,35 +18,31 @@ CORS(app)
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(url_split_bp, url_prefix='/api')
 
-# Configuração robusta do banco de dados
-# Prioriza PostgreSQL do Heroku, fallback para SQLite local
+# Configuração do banco de dados - PostgreSQL primeiro, SQLite como fallback
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    # Heroku PostgreSQL - PERSISTENTE
+    # Heroku PostgreSQL
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    print("🐘 Usando PostgreSQL")
 else:
-    # SQLite local para desenvolvimento
+    # SQLite local
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'app.db')
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
+    print("📁 Usando SQLite")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
-}
 
 db.init_app(app)
 
-# Inicialização robusta do banco
 with app.app_context():
     try:
         db.create_all()
-        print("✅ Banco de dados inicializado com sucesso!")
+        print("✅ Banco de dados inicializado!")
     except Exception as e:
-        print(f"❌ Erro ao inicializar banco: {e}")
+        print(f"❌ Erro no banco: {e}")
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -65,12 +61,6 @@ def serve(path):
             return "index.html not found", 404
 
 if __name__ == '__main__':
-    # Configuração robusta para produção
     port = int(os.environ.get('PORT', 5000))
-    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    print(f"🚀 Iniciando aplicação na porta {port}")
-    print(f"🔧 Modo debug: {debug_mode}")
-    print(f"💾 Banco: {'PostgreSQL (Heroku)' if DATABASE_URL else 'SQLite (Local)'}")
-    
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    print(f"🚀 Iniciando na porta {port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
