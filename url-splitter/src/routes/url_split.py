@@ -6,6 +6,45 @@ import json
 
 url_split_bp = Blueprint('url_split', __name__)
 
+def safe_json_parse(data, field_name="campo"):
+    """
+    Função para fazer parse seguro de JSON, tratando casos de JSON duplo
+    """
+    try:
+        if data is None:
+            print(f"⚠️ {field_name} é None")
+            return []
+        
+        if isinstance(data, list):
+            print(f"✅ {field_name} já é lista: {data}")
+            return data
+        
+        if isinstance(data, str):
+            print(f"🔍 {field_name} é string, fazendo parse: {data[:100]}...")
+            parsed = json.loads(data)
+            
+            # Se o resultado ainda for string, fazer parse novamente (JSON duplo)
+            if isinstance(parsed, str):
+                print(f"🔄 {field_name} é JSON duplo, fazendo segundo parse")
+                parsed = json.loads(parsed)
+            
+            if isinstance(parsed, list):
+                print(f"✅ {field_name} parseado com sucesso: {len(parsed)} itens")
+                return parsed
+            else:
+                print(f"❌ {field_name} não é lista após parse: {type(parsed)}")
+                return []
+        
+        print(f"❌ {field_name} tipo não suportado: {type(data)}")
+        return []
+        
+    except json.JSONDecodeError as e:
+        print(f"❌ Erro JSON em {field_name}: {e}")
+        return []
+    except Exception as e:
+        print(f"❌ Erro geral em {field_name}: {e}")
+        return []
+
 @url_split_bp.route('/splits', methods=['GET'])
 def get_splits():
     """Listar todos os splits"""
@@ -16,9 +55,9 @@ def get_splits():
         print(f"🔍 Encontrados {len(splits)} splits no banco")
         
         for split in splits:
-            # Converter JSON strings para objetos Python
-            destinations = json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations
-            weights = json.loads(split.weights) if isinstance(split.weights, str) else split.weights
+            # Parse seguro dos dados JSON
+            destinations = safe_json_parse(split.destinations, "destinations")
+            weights = safe_json_parse(split.weights, "weights")
             
             splits_data.append({
                 'id': split.id,
@@ -54,12 +93,27 @@ def create_split():
         if existing:
             return jsonify({'error': 'Slug já existe'}), 400
         
+        # Garantir que destinations é uma lista
+        destinations = data['destinations']
+        if isinstance(destinations, str):
+            destinations = [destinations]
+        
+        # Garantir que weights é uma lista
+        weights = data.get('weights', [])
+        if not weights or len(weights) != len(destinations):
+            weights = [round(100 / len(destinations), 1)] * len(destinations)
+        
+        print(f"📝 Criando split:")
+        print(f"   Slug: {data['slug']}")
+        print(f"   Destinations: {destinations}")
+        print(f"   Weights: {weights}")
+        
         # Criar novo split (APENAS com parâmetros básicos)
         new_split = UrlSplit(
             slug=data['slug'],
             name=data['name'],
-            destinations=json.dumps(data['destinations']),
-            weights=json.dumps(data.get('weights', [25] * len(data['destinations'])))
+            destinations=json.dumps(destinations),  # Garantir que é JSON válido
+            weights=json.dumps(weights)  # Garantir que é JSON válido
         )
         
         db.session.add(new_split)
@@ -160,7 +214,7 @@ def delete_split(split_id):
 
 @url_split_bp.route('/r/<slug>')
 def redirect_split(slug):
-    """Redirecionamento do split - VERSÃO CORRIGIDA"""
+    """Redirecionamento do split - VERSÃO CORRIGIDA PARA JSON"""
     try:
         print(f"🔍 Buscando split com slug: '{slug}'")
         
@@ -175,33 +229,47 @@ def redirect_split(slug):
             return jsonify({'error': 'Split not found'}), 404
         
         print(f"✅ Split encontrado: {split.slug} (ID: {split.id})")
+        print(f"📊 Dados brutos do banco:")
+        print(f"   destinations: {split.destinations}")
+        print(f"   weights: {split.weights}")
         
-        # Converter JSON para objetos Python
-        try:
-            destinations = json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations
-            weights = json.loads(split.weights) if isinstance(split.weights, str) else split.weights
-        except json.JSONDecodeError as e:
-            print(f"❌ Erro ao decodificar JSON: {e}")
-            return jsonify({'error': 'Dados corrompidos'}), 500
+        # Parse seguro dos dados JSON
+        destinations = safe_json_parse(split.destinations, "destinations")
+        weights = safe_json_parse(split.weights, "weights")
         
-        print(f"📍 Destinos: {destinations}")
-        print(f"⚖️ Pesos: {weights}")
+        print(f"📍 Destinos parseados: {destinations}")
+        print(f"⚖️ Pesos parseados: {weights}")
         
         if not destinations or len(destinations) == 0:
-            print("❌ Nenhum destino configurado")
+            print("❌ Nenhum destino válido encontrado")
             return jsonify({'error': 'Nenhum destino configurado'}), 404
+        
+        # Validar que destinations é realmente uma lista de URLs
+        valid_destinations = []
+        for dest in destinations:
+            if isinstance(dest, str) and (dest.startswith('http://') or dest.startswith('https://')):
+                valid_destinations.append(dest)
+            else:
+                print(f"⚠️ Destino inválido ignorado: {dest}")
+        
+        if not valid_destinations:
+            print("❌ Nenhum destino válido após validação")
+            return jsonify({'error': 'Nenhum destino válido'}), 404
+        
+        print(f"✅ Destinos válidos: {valid_destinations}")
         
         # Escolher destino baseado nos pesos
         try:
-            if len(weights) == len(destinations) and all(w > 0 for w in weights):
-                chosen_url = random.choices(destinations, weights=weights)[0]
+            if (len(weights) == len(valid_destinations) and 
+                all(isinstance(w, (int, float)) and w > 0 for w in weights)):
+                chosen_url = random.choices(valid_destinations, weights=weights)[0]
                 print(f"🎯 URL escolhida com peso: {chosen_url}")
             else:
-                chosen_url = random.choice(destinations)
+                chosen_url = random.choice(valid_destinations)
                 print(f"🎯 URL escolhida aleatoriamente: {chosen_url}")
         except Exception as e:
             print(f"❌ Erro ao escolher URL: {e}")
-            chosen_url = destinations[0]  # Fallback para primeira URL
+            chosen_url = valid_destinations[0]  # Fallback para primeira URL
             print(f"🔄 Fallback para primeira URL: {chosen_url}")
         
         print(f"🔗 Redirecionando {slug} -> {chosen_url}")
@@ -223,8 +291,8 @@ def get_split_stats(split_id):
         if not split:
             return jsonify({'error': 'Split não encontrado'}), 404
         
-        destinations = json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations
-        weights = json.loads(split.weights) if isinstance(split.weights, str) else split.weights
+        destinations = safe_json_parse(split.destinations, "destinations")
+        weights = safe_json_parse(split.weights, "weights")
         
         return jsonify({
             'id': split.id,
@@ -247,14 +315,24 @@ def debug_splits():
         debug_data = []
         
         for split in splits:
+            destinations_raw = split.destinations
+            weights_raw = split.weights
+            
+            destinations_parsed = safe_json_parse(destinations_raw, f"destinations-{split.slug}")
+            weights_parsed = safe_json_parse(weights_raw, f"weights-{split.slug}")
+            
             debug_data.append({
                 'id': split.id,
                 'slug': split.slug,
                 'name': split.name,
-                'destinations_raw': split.destinations,
-                'weights_raw': split.weights,
-                'destinations_parsed': json.loads(split.destinations) if isinstance(split.destinations, str) else split.destinations,
-                'weights_parsed': json.loads(split.weights) if isinstance(split.weights, str) else split.weights
+                'destinations_raw': destinations_raw,
+                'weights_raw': weights_raw,
+                'destinations_parsed': destinations_parsed,
+                'weights_parsed': weights_parsed,
+                'destinations_type': str(type(destinations_raw)),
+                'weights_type': str(type(weights_raw)),
+                'destinations_valid': all(isinstance(d, str) and d.startswith(('http://', 'https://')) for d in destinations_parsed),
+                'weights_valid': all(isinstance(w, (int, float)) for w in weights_parsed)
             })
         
         return jsonify({
@@ -264,3 +342,4 @@ def debug_splits():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
