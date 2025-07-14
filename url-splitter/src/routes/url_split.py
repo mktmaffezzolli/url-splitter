@@ -3,7 +3,6 @@ from src.models.user import db
 from src.models.url_split import URLSplit as UrlSplit
 import random
 import json
-from datetime import datetime
 
 url_split_bp = Blueprint('url_split', __name__)
 
@@ -24,8 +23,7 @@ def get_splits():
                 'slug': split.slug,
                 'name': split.name,
                 'destinations': destinations,
-                'weights': weights,
-                'created_at': split.created_at.isoformat() if split.created_at else None
+                'weights': weights
             })
         
         return jsonify(splits_data)
@@ -54,13 +52,12 @@ def create_split():
         if existing:
             return jsonify({'error': 'Slug já existe'}), 400
         
-        # Criar novo split (SEM total_clicks)
+        # Criar novo split (APENAS com parâmetros básicos)
         new_split = UrlSplit(
             slug=data['slug'],
             name=data['name'],
             destinations=json.dumps(data['destinations']),
-            weights=json.dumps(data.get('weights', [25] * len(data['destinations']))),
-            created_at=datetime.utcnow()
+            weights=json.dumps(data.get('weights', [25] * len(data['destinations'])))
         )
         
         db.session.add(new_split)
@@ -204,8 +201,7 @@ def get_split_stats(split_id):
             'slug': split.slug,
             'name': split.name,
             'destinations': destinations,
-            'weights': weights,
-            'created_at': split.created_at.isoformat() if split.created_at else None
+            'weights': weights
         })
         
     except Exception as e:
